@@ -22,27 +22,110 @@ export default function Login() {
     if (!u) return null;
     try {
       const snap = await getDoc(doc(db, "users", u.uid));
-      const role = snap.exists() ? snap.data().role : null;
-      return role ? String(role).toLowerCase() : null;
-    } catch { return null; }
+      if (snap.exists()) {
+        const userData = snap.data();
+        const role = userData.role;
+        console.log("User role resolved:", role); // Debug log
+        return role ? String(role).toLowerCase() : "user";
+      }
+      return "user"; // Default role if no user document exists
+    } catch (error) {
+      console.error("Error resolving role:", error);
+      return "user"; // Default role on error
+    }
   }
 
   const redirectByRole = async () => {
-    const role = await resolveRole();
-    const dest = loc.state?.from?.pathname || (role ? `/dashboard/${role}` : "/dashboard/user");
-    nav(dest, { replace: true });
+    try {
+      const role = await resolveRole();
+      console.log("Redirecting with role:", role); // Debug log
+      
+      // Check if there's a specific redirect location
+      const redirectPath = loc.state?.from?.pathname;
+      
+      if (redirectPath) {
+        nav(redirectPath, { replace: true });
+      } else {
+        // Role-based dashboard redirect
+        switch (role) {
+          case "admin":
+            nav("/dashboard/admin", { replace: true });
+            break;
+          case "trainer":
+            nav("/dashboard/trainer", { replace: true });
+            break;
+          case "security":
+            nav("/dashboard/security", { replace: true });
+            break;
+          case "accounting":
+            nav("/dashboard/accounting", { replace: true });
+            break;
+          case "marketing":
+            nav("/dashboard/marketing", { replace: true });
+            break;
+          case "developer":
+            nav("/dashboard/developer", { replace: true });
+            break;
+          case "design":
+            nav("/dashboard/design", { replace: true });
+            break;
+          default:
+            nav("/dashboard/user", { replace: true });
+        }
+      }
+    } catch (error) {
+      console.error("Error during redirect:", error);
+      nav("/dashboard/user", { replace: true }); // Fallback
+    }
   };
 
   const submit = async (e) => {
     e?.preventDefault();
     setErr("");
     setBusy(true);
+    
     try {
+      // Set auth persistence based on remember me checkbox
       await setAuthPersistence(remember);
-      await signInWithEmailAndPassword(auth, email.trim(), pwd);
+      
+      // Sign in user
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pwd);
+      const user = userCredential.user;
+      
+      console.log("User signed in:", user.uid); // Debug log
+      
+      // Wait a moment for the user to be fully authenticated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirect based on role
       await redirectByRole();
+      
     } catch (ex) {
-      setErr(ex?.message || "Unable to sign in. Please check your credentials and try again.");
+      console.error("Sign in error:", ex);
+      let errorMessage = "Unable to sign in. Please check your credentials and try again.";
+      
+      // Provide more specific error messages
+      switch (ex.code) {
+        case 'auth/user-not-found':
+          errorMessage = "No account found with this email address.";
+          break;
+        case 'auth/wrong-password':
+          errorMessage = "Incorrect password. Please try again.";
+          break;
+        case 'auth/invalid-email':
+          errorMessage = "Please enter a valid email address.";
+          break;
+        case 'auth/user-disabled':
+          errorMessage = "This account has been disabled. Please contact support.";
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = "Too many failed attempts. Please wait a moment before trying again.";
+          break;
+        default:
+          errorMessage = ex?.message || errorMessage;
+      }
+      
+      setErr(errorMessage);
     } finally {
       setBusy(false);
     }
@@ -173,14 +256,14 @@ export default function Login() {
               <span className="logo-dot" />
               SecureMind
             </span>
-            <h1 className="title">Welcome back, defender 👋</h1>
+            <h1 className="title">Welcome back, defender</h1>
             <p className="subtitle">
-              Pick up right where you left off. Train smarter with role‑based modules,
-              quizzes, and real‑world simulations — all aligned to your company’s security policy.
+              Pick up right where you left off. Train smarter with role-based modules,
+              quizzes, and real-world simulations — all aligned to your company's security policy.
             </p>
 
             <div className="bullets">
-              <div className="bullet"><i>✓</i><div><strong>Role‑aware learning</strong><div className="muted">Admin, Security, Accounting, Dev, and more.</div></div></div>
+              <div className="bullet"><i>✓</i><div><strong>Role-aware learning</strong><div className="muted">Admin, Security, Accounting, Dev, and more.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Compliance tracking</strong><div className="muted">See progress, scores, and deadlines.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Gamified drills</strong><div className="muted">Phishing spotters, bug hunts, invoice checks.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Policy updates</strong><div className="muted">Acknowledge and stay compliant in minutes.</div></div></div>

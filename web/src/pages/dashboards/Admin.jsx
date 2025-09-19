@@ -1,6 +1,6 @@
 // web/src/pages/dashboards/Admin.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   getFirestore,
   collection,
@@ -9,8 +9,11 @@ import {
   limit,
   onSnapshot,
   getCountFromServer,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import { auth } from "../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Topbar from "../../components/Topbar";
 import useIdleLogout from "../../hooks/useIdleLogout";
 
@@ -74,8 +77,60 @@ const QuickActionCard = ({ title, desc, to, icon, color = "primary" }) => (
   </div>
 );
 
+// Loading component
+const LoadingSpinner = ({ message = "Loading..." }) => (
+  <div className="d-flex flex-column justify-content-center align-items-center py-5">
+    <div className="spinner-border text-primary mb-3" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+    <p className="text-muted">{message}</p>
+  </div>
+);
+
+// Access denied component
+const AccessDenied = ({ userRole }) => (
+  <div className="container-fluid py-4 dashboard-bg">
+    <div className="container text-center py-5">
+      <div className="card border-0 shadow-sm mx-auto" style={{ maxWidth: '500px' }}>
+        <div className="card-body p-5">
+          <div className="text-danger mb-4" style={{ fontSize: '4rem' }}>🚫</div>
+          <h2 className="h3 fw-bold text-dark mb-3">Access Denied</h2>
+          <p className="text-muted mb-4">
+            You don't have permission to access the Admin Dashboard.
+            {userRole && (
+              <>
+                <br />
+                <small>Current role: <span className="badge bg-secondary">{userRole}</span></small>
+              </>
+            )}
+          </p>
+          <div className="d-flex gap-3 justify-content-center">
+            <Link to="/dashboard" className="btn btn-primary">
+              <i className="bi bi-house me-2"></i>
+              Go to Your Dashboard
+            </Link>
+            <Link to="/" className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left me-2"></i>
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function AdminDashboard() {
   const db = useMemo(() => getFirestore(), []);
+  const navigate = useNavigate();
+  
+  // Authentication and authorization states
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+
+  // Dashboard data states
   const [counts, setCounts] = useState({
     users: null,
     policies: null,
@@ -88,50 +143,128 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [mfaNeeded, setMfaNeeded] = useState(false);
 
-  // Idle logout after 15 min
-  useIdleLogout(15);
+  // Idle logout with 30-minute timeout (only for admins)
+  useIdleLogout(30);
 
-  // MFA banner check for Admins
+  // Auth state and role verification
   useEffect(() => {
-    const u = auth.currentUser;
-    if (!u) return;
-    const enrolled = u?.multiFactor?.enrolledFactors || [];
-    setMfaNeeded(enrolled.length === 0);
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthLoading(true);
+      setUser(firebaseUser);
+      
+      if (!firebaseUser) {
+        setUserRole(null);
+        setHasAccess(false);
+        setAuthLoading(false);
+        navigate('/login');
+        return;
+      }
 
-  // Live lists
+      try {
+        // Get user role from Firestore
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const role = userData.role?.toLowerCase();
+          setUserRole(role);
+          
+          // Check if user has admin access
+          const isAdmin = role === 'admin';
+          setHasAccess(isAdmin);
+          
+          if (!isAdmin) {
+            console.warn(`Access denied for user ${firebaseUser.uid} with role: ${role}`);
+            setError(`Access denied. Admin privileges required. Current role: ${role}`);
+          }
+          
+          // Check MFA status for admins
+          if (isAdmin) {
+            const enrolled = firebaseUser?.multiFactor?.enrolledFactors || [];
+            setMfaNeeded(enrolled.length === 0);
+          }
+        } else {
+          console.warn(`No user document found for ${firebaseUser.uid}`);
+          setUserRole(null);
+          setHasAccess(false);
+          setError("User profile not found. Please contact support.");
+        }
+      } catch (err) {
+        console.error("Error verifying user role:", err);
+        setError("Failed to verify user permissions. Please try again.");
+        setHasAccess(false);
+      }
+      
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [db, navigate]);
+
+  // Load dashboard data only for authorized admins
   useEffect(() => {
+    if (!hasAccess || !user) return;
+
     const unsubs = [];
+    
     try {
+      // Recent users listener
       unsubs.push(
         onSnapshot(
           query(collection(db, "users"), orderBy("createdAt", "desc"), limit(5)),
-          (snap) => setRecentUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+          (snap) => {
+            const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setRecentUsers(users);
+          },
+          (err) => {
+            console.error("Error loading recent users:", err);
+            setError(prev => prev || "Failed to load recent users data.");
+          }
         )
       );
+
+      // Recent facts listener
       unsubs.push(
         onSnapshot(
           query(collection(db, "facts"), orderBy("createdAt", "desc"), limit(5)),
-          (snap) => setRecentFacts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+          (snap) => {
+            const facts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setRecentFacts(facts);
+          },
+          (err) => {
+            console.error("Error loading recent facts:", err);
+            setError(prev => prev || "Failed to load recent facts data.");
+          }
         )
       );
-    } catch (e) {
-      setError(e.message || "Failed to load lists.");
+    } catch (err) {
+      console.error("Error setting up listeners:", err);
+      setError("Failed to load dashboard data.");
     }
-    return () => unsubs.forEach((u) => u && u());
-  }, [db]);
 
-  // Counts
+    return () => {
+      unsubs.forEach((unsub) => {
+        if (typeof unsub === 'function') {
+          unsub();
+        }
+      });
+    };
+  }, [db, hasAccess, user]);
+
+  // Load counts for authorized admins
   useEffect(() => {
+    if (!hasAccess || !user) return;
+
     (async () => {
       try {
         const [cUsers, cPolicies, cFacts, cTrain, cQuizzes] = await Promise.all([
-          getCountFromServer(collection(db, "users")).catch(() => null),
-          getCountFromServer(collection(db, "policies")).catch(() => null),
-          getCountFromServer(collection(db, "facts")).catch(() => null),
-          getCountFromServer(collection(db, "trainings")).catch(() => null),
-          getCountFromServer(collection(db, "quizzes")).catch(() => null),
+          getCountFromServer(collection(db, "users")).catch(() => ({ data: () => ({ count: 0 }) })),
+          getCountFromServer(collection(db, "policies")).catch(() => ({ data: () => ({ count: 0 }) })),
+          getCountFromServer(collection(db, "facts")).catch(() => ({ data: () => ({ count: 0 }) })),
+          getCountFromServer(collection(db, "trainings")).catch(() => ({ data: () => ({ count: 0 }) })),
+          getCountFromServer(collection(db, "quizzes")).catch(() => ({ data: () => ({ count: 0 }) })),
         ]);
+        
         setCounts({
           users: cUsers?.data().count ?? 0,
           policies: cPolicies?.data().count ?? 0,
@@ -139,11 +272,22 @@ export default function AdminDashboard() {
           trainings: cTrain?.data().count ?? 0,
           quizzes: cQuizzes?.data().count ?? 0,
         });
-      } catch (e) {
-        setError(e.message || "Failed to load counts.");
+      } catch (err) {
+        console.error("Error loading counts:", err);
+        setError(prev => prev || "Failed to load statistics.");
       }
     })();
-  }, [db]);
+  }, [db, hasAccess, user]);
+
+  // Loading state
+  if (authLoading) {
+    return <LoadingSpinner message="Verifying admin access..." />;
+  }
+
+  // Access denied state
+  if (!authLoading && (!user || !hasAccess)) {
+    return <AccessDenied userRole={userRole} />;
+  }
 
   return (
     <>
@@ -159,9 +303,24 @@ export default function AdminDashboard() {
                 Admin Dashboard
               </h1>
               <p className="text-muted mb-0">
-                Welcome back! Here's what's happening with your system today.
+                Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'Admin'}! 
+                Here's what's happening with your system today.
               </p>
             </div>
+          </div>
+
+          {/* Session Info Banner */}
+          <div className="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between mb-4" role="alert">
+            <div className="d-flex align-items-center">
+              <i className="bi bi-clock fs-4 me-3 text-info"></i>
+              <div>
+                <h6 className="mb-1 fw-semibold">Session Information</h6>
+                <small>Auto-logout after 30 minutes of inactivity. Current role: <span className="badge bg-danger">Admin</span></small>
+              </div>
+            </div>
+            <small className="text-muted">
+              Session started: {new Date().toLocaleTimeString()}
+            </small>
           </div>
 
           {/* MFA Warning */}
@@ -185,7 +344,16 @@ export default function AdminDashboard() {
           {error && (
             <div className="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              {error}
+              <div>
+                <strong>Error:</strong> {error}
+                <button 
+                  className="btn btn-sm btn-link text-danger p-0 ms-2"
+                  onClick={() => setError("")}
+                  title="Dismiss"
+                >
+                  <i className="bi bi-x"></i>
+                </button>
+              </div>
             </div>
           )}
 
@@ -403,6 +571,12 @@ export default function AdminDashboard() {
               color: #fecaca !important;
             }
             
+            [data-bs-theme="dark"] .alert-info {
+              background-color: #0f3460 !important;
+              border-color: #1e40af !important;
+              color: #bfdbfe !important;
+            }
+            
             /* Dark theme for tables */
             [data-bs-theme="dark"] .table {
               color: #e2e8f0 !important;
@@ -428,19 +602,6 @@ export default function AdminDashboard() {
             
             [data-bs-theme="dark"] .text-secondary {
               color: #a0aec0 !important;
-            }
-            
-            /* Logout button styling */
-            .btn-logout {
-              background-color: #dc3545 !important;
-              border-color: #dc3545 !important;
-              color: white !important;
-            }
-            
-            .btn-logout:hover {
-              background-color: #c82333 !important;
-              border-color: #bd2130 !important;
-              color: white !important;
             }
             
             .modern-card {
