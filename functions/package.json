@@ -1,0 +1,22 @@
+{
+  "name": "securemind-functions",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "echo 'ESM - no build step'",
+    "serve": "firebase emulators:start --only functions,firestore,auth,storage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^5.1.1",
+    "mongodb": "^6.6.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

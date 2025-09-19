@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "mind-76cce"
+  },
+  "targets": {
+    "mind-76cce": {
+      "hosting": {
+        "web": [
+          "web"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+[
+  { "employeeId": "AD001", "fullName": "Alice Admin", "email": "alice.admin@company.com", "role": "admin", "department": "Administration", "team": "Core Admin", "isActive": true },
+  { "employeeId": "AD002", "fullName": "Bob Admin", "email": "bob.admin@company.com", "role": "admin", "department": "Administration", "team": "Core Admin", "isActive": true },
+
+  { "employeeId": "SE001", "fullName": "Noah Patel", "email": "noah.patel@company.com", "role": "security", "department": "Security", "team": "Blue Team", "isActive": true },
+  { "employeeId": "SE002", "fullName": "Maya Chen", "email": "maya.chen@company.com", "role": "security", "department": "Security", "team": "Red Team", "isActive": true },
+  { "employeeId": "SE003", "fullName": "Ethan Rossi", "email": "ethan.rossi@company.com", "role": "security", "department": "Security", "team": "GRC", "isActive": true },
+  { "employeeId": "SE004", "fullName": "Layla Ahmed", "email": "layla.ahmed@company.com", "role": "security", "department": "Security", "team": "Threat Intel", "isActive": true },
+  { "employeeId": "SE005", "fullName": "Jonas Müller", "email": "jonas.mueller@company.com", "role": "security", "department": "Security", "team": "AppSec", "isActive": true },
+
+  { "employeeId": "AC001", "fullName": "Priya Nair", "email": "priya.nair@company.com", "role": "accounting", "department": "Accounting", "team": "Payables", "isActive": true },
+  { "employeeId": "AC002", "fullName": "Oliver Grant", "email": "oliver.grant@company.com", "role": "accounting", "department": "Accounting", "team": "Receivables", "isActive": true },
+  { "employeeId": "AC003", "fullName": "Sofia Alves", "email": "sofia.alves@company.com", "role": "accounting", "department": "Accounting", "team": "Payroll", "isActive": true },
+  { "employeeId": "AC004", "fullName": "Hiro Tanaka", "email": "hiro.tanaka@company.com", "role": "accounting", "department": "Accounting", "team": "Reporting", "isActive": true },
+  { "employeeId": "AC005", "fullName": "Emily Wright", "email": "emily.wright@company.com", "role": "accounting", "department": "Accounting", "team": "Controls", "isActive": true },
+
+  { "employeeId": "MK001", "fullName": "Leo Martins", "email": "leo.martins@company.com", "role": "marketing", "department": "Marketing", "team": "Brand", "isActive": true },
+  { "employeeId": "MK002", "fullName": "Chloe Rivera", "email": "chloe.rivera@company.com", "role": "marketing", "department": "Marketing", "team": "Content", "isActive": true },
+  { "employeeId": "MK003", "fullName": "Arjun Sharma", "email": "arjun.sharma@company.com", "role": "marketing", "department": "Marketing", "team": "Performance", "isActive": true },
+  { "employeeId": "MK004", "fullName": "Gianna Russo", "email": "gianna.russo@company.com", "role": "marketing", "department": "Marketing", "team": "Campaigns", "isActive": true },
+  { "employeeId": "MK005", "fullName": "Marcus Lee", "email": "marcus.lee@company.com", "role": "marketing", "department": "Marketing", "team": "PR", "isActive": true },
+
+  { "employeeId": "CC001", "fullName": "Nina Kowalski", "email": "nina.kowalski@company.com", "role": "marketing", "department": "Customer Care", "team": "Support Desk", "isActive": true },
+  { "employeeId": "CC002", "fullName": "David Park", "email": "david.park@company.com", "role": "marketing", "department": "Customer Care", "team": "Escalations", "isActive": true },
+  { "employeeId": "CC003", "fullName": "Helena Costa", "email": "helena.costa@company.com", "role": "marketing", "department": "Customer Care", "team": "Onboarding", "isActive": true },
+  { "employeeId": "CC004", "fullName": "Samuel Brooks", "email": "samuel.brooks@company.com", "role": "marketing", "department": "Customer Care", "team": "Retention", "isActive": true },
+  { "employeeId": "CC005", "fullName": "Isabella Romero", "email": "isabella.romero@company.com", "role": "marketing", "department": "Customer Care", "team": "Quality", "isActive": true },
+
+  { "employeeId": "DV001", "fullName": "Mateo Garcia", "email": "mateo.garcia@company.com", "role": "developer", "department": "Engineering", "team": "Platform", "isActive": true },
+  { "employeeId": "DV002", "fullName": "Alice Nguyen", "email": "alice.nguyen@company.com", "role": "developer", "department": "Engineering", "team": "Frontend", "isActive": true },
+  { "employeeId": "DV003", "fullName": "Tariq Hassan", "email": "tariq.hassan@company.com", "role": "developer", "department": "Engineering", "team": "Backend", "isActive": true },
+  { "employeeId": "DV004", "fullName": "Sophie Dubois", "email": "sophie.dubois@company.com", "role": "developer", "department": "Engineering", "team": "QA", "isActive": true },
+  { "employeeId": "DV005", "fullName": "Luca Bianchi", "email": "luca.bianchi@company.com", "role": "developer", "department": "Engineering", "team": "DevOps", "isActive": true },
+
+  { "employeeId": "DC001", "fullName": "Aaliyah Jones", "email": "aaliyah.jones@company.com", "role": "design", "department": "Design & Content", "team": "UI/UX", "isActive": true },
+  { "employeeId": "DC002", "fullName": "Felix Novak", "email": "felix.novak@company.com", "role": "design", "department": "Design & Content", "team": "Brand Design", "isActive": true },
+  { "employeeId": "DC003", "fullName": "Keira O'Neill", "email": "keira.oneill@company.com", "role": "design", "department": "Design & Content", "team": "Content Studio", "isActive": true },
+  { "employeeId": "DC004", "fullName": "Diego Santos", "email": "diego.santos@company.com", "role": "design", "department": "Design & Content", "team": "Illustration", "isActive": true },
+  { "employeeId": "DC005", "fullName": "Hannah Fischer", "email": "hannah.fischer@company.com", "role": "design", "department": "Design & Content", "team": "Motion", "isActive": true }
+]

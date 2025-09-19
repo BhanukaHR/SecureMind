@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function authed() { return request.auth != null; }
+    function isAdmin() { return authed() && request.auth.token.role == 'admin'; }
+
+    // Policy PDFs
+    match /policies/{allPaths=**} {
+      allow read: if authed();
+      allow write, delete: if isAdmin();
+    }
+
+    // Quiz / training media if you have any
+    match /quiz_media/{allPaths=**} {
+      allow read: if authed();
+      allow write, delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

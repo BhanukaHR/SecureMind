@@ -1,0 +1,8 @@
+{
+  "name": "securemind-migrate",
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^12.5.0",
+    "mongodb": "^6.6.2"
+  }
+}
