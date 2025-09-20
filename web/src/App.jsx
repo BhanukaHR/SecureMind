@@ -30,6 +30,7 @@ import Policies from "./pages/admin/Policies";
 import TrainingQuizzes from "./pages/admin/TrainingQuizzes";
 import FactsNotifications from "./pages/admin/FactsNotifications";
 import Reports from "./pages/admin/Reports";
+import Settings from "./pages/admin/Settings";
 
 import { auth } from "./firebase";
 
@@ -199,6 +200,14 @@ export default function App() {
         element={
           <AdminGuard>
             <Reports />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/Settings"
+        element={
+          <AdminGuard>
+            <Settings />
           </AdminGuard>
         }
       />
