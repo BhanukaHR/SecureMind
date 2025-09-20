@@ -582,7 +582,7 @@ export default function Home() {
                 )}
               </div>
               
-              <div className="mt-4 d-flex align-items-center justify-content-center justify-content-lg-start gap-4 text-white-50">
+              <div className="mt-4 d-flex align-items-center justify-content-center justify-content-lg-start gap-4 text-black-50">
                 <div className="d-flex align-items-center">
                   <span className="me-2 text-success">✓</span>
                   <small>Role-based training</small>
