@@ -24,13 +24,12 @@ import Design from "./pages/dashboards/Design.jsx";
 import User from "./pages/dashboards/User.jsx";
 
 // Admin management pages
-import AdminDashboard from "./pages/dashboards/Admin"; // overview landing at /admin
 import Users from "./pages/admin/Users";
 import Policies from "./pages/admin/Policies";
 import TrainingQuizzes from "./pages/admin/TrainingQuizzes";
 import FactsNotifications from "./pages/admin/FactsNotifications";
 import Reports from "./pages/admin/Reports";
-import Settings from "./pages/admin/Settings";
+import Settings from "./pages/admin/settings";
 
 import { auth } from "./firebase";
 
@@ -159,7 +158,7 @@ export default function App() {
         path="/admin"
         element={
           <AdminGuard>
-            <AdminDashboard />
+            <Admin />
           </AdminGuard>
         }
       />
@@ -204,7 +203,7 @@ export default function App() {
         }
       />
       <Route
-        path="/admin/Settings"
+        path="/admin/settings"
         element={
           <AdminGuard>
             <Settings />

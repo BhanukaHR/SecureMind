@@ -74,6 +74,13 @@ service cloud.firestore {
       );
     }
 
+    // ---- app_settings/{settingId} ------------------------------------------
+    // System settings - only admins can read and modify
+    match /app_settings/{settingId} {
+      allow read, create, update: if isAdmin();
+      allow delete: if isAdmin(); // Optional: restrict delete further if needed
+    }
+
     // ---- employees/{employeeId} --------------------------------------------
     match /employees/{employeeId} {
       // Admin can read all employee records
@@ -113,6 +120,17 @@ service cloud.firestore {
         // prevent privilege escalation: cannot change role/disabled, etc.
         request.resource.data.role == resource.data.role &&
         request.resource.data.get("disabled", false) == resource.data.get("disabled", false);
+
+      // Admin bulk operations - allow batch updates for role changes and enable/disable
+      allow update: if isAdmin() &&
+        // Only allow changing these specific fields during bulk operations
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          "role",
+          "disabled",
+          "updatedAt"
+        ]) &&
+        // Ensure valid role if role is being changed
+        (request.resource.data.role == resource.data.role || isValidRole(request.resource.data.role));
     }
 
     // ---- policies/{policyId} ----------------------------------------------

@@ -217,7 +217,9 @@ export default function SystemSettings() {
                   <i className="bi bi-gear-wide-connected me-2"></i>
                   System Settings
                 </h3>
-                <p className="text-muted mb-0 mt-1">Configure organization, security, notifications, data retention, and run bulk user changes</p>
+                <p className="text-muted mb-0 mt-1">
+                  Configure organization, security, notifications, data retention, and run bulk user changes
+                </p>
               </div>
             </div>
           </div>
@@ -240,10 +242,10 @@ export default function SystemSettings() {
             <div className="row g-4">
               {/* Organization */}
               <div className="col-12">
-                <div className="card border-0 shadow-sm modern-card">
-                  <div className="card-header bg-white border-0 d-flex align-items-center py-3">
+                <div className="card border-0 shadow-sm modern-card bg-body">
+                  <div className="card-header bg-body border-0 d-flex align-items-center py-3">
                     <i className="bi bi-building me-2 text-primary"></i>
-                    <h5 className="mb-0 fw-semibold">Organization</h5>
+                    <h5 className="mb-0 fw-semibold text-body">Organization</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
@@ -290,10 +292,10 @@ export default function SystemSettings() {
 
               {/* Security */}
               <div className="col-12">
-                <div className="card border-0 shadow-sm modern-card">
-                  <div className="card-header bg-white border-0 d-flex align-items-center py-3">
+                <div className="card border-0 shadow-sm modern-card bg-body">
+                  <div className="card-header bg-body border-0 d-flex align-items-center py-3">
                     <i className="bi bi-shield-lock me-2 text-danger"></i>
-                    <h5 className="mb-0 fw-semibold">Security</h5>
+                    <h5 className="mb-0 fw-semibold text-body">Security</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
@@ -309,7 +311,9 @@ export default function SystemSettings() {
                             checked={!!settings.security.maintenanceMode}
                             onChange={(e) => handle(["security", "maintenanceMode"], e.target.checked)}
                           />
-                          <label className="form-check-label">Show maintenance banner and limit non-admin access</label>
+                          <label className="form-check-label">
+                            Show maintenance banner and limit non-admin access
+                          </label>
                         </div>
                       </div>
                       <div className="col-md-3">
@@ -324,9 +328,13 @@ export default function SystemSettings() {
                             checked={!!settings.security.enforceMFA}
                             onChange={(e) => handle(["security", "enforceMFA"], e.target.checked)}
                           />
-                          <label className="form-check-label">Admins should enroll in MFA (tracked in settings)</label>
+                          <label className="form-check-label">
+                            Admins should enroll in MFA (tracked in settings)
+                          </label>
                         </div>
-                        <small className="text-muted">Note: Client apps must respect this flag and block access for unenrolled admins.</small>
+                        <small className="text-muted">
+                          Note: Client apps must respect this flag and block access for unenrolled admins.
+                        </small>
                       </div>
                       <div className="col-md-3">
                         <label className="form-label fw-semibold">
@@ -357,10 +365,10 @@ export default function SystemSettings() {
 
                       {/* Password policy */}
                       <div className="col-12">
-                        <div className="p-3 rounded border bg-light">
+                        <div className="p-3 rounded border bg-secondary bg-opacity-10">
                           <div className="d-flex align-items-center mb-2">
                             <i className="bi bi-key me-2"></i>
-                            <strong>Password Policy</strong>
+                            <strong className="text-body">Password Policy</strong>
                           </div>
                           <div className="row g-3">
                             <div className="col-md-3">
@@ -399,7 +407,7 @@ export default function SystemSettings() {
                       <div className="col-12">
                         <label className="form-label fw-semibold">
                           <i className="bi bi-at me-1"></i>
-                          Allowed Sign‑in Domains (comma separated)
+                          Allowed Sign-in Domains (comma separated)
                         </label>
                         <input
                           className="form-control form-control-modern"
@@ -415,10 +423,10 @@ export default function SystemSettings() {
 
               {/* Notifications */}
               <div className="col-12">
-                <div className="card border-0 shadow-sm modern-card">
-                  <div className="card-header bg-white border-0 d-flex align-items-center py-3">
+                <div className="card border-0 shadow-sm modern-card bg-body">
+                  <div className="card-header bg-body border-0 d-flex align-items-center py-3">
                     <i className="bi bi-bell me-2 text-warning"></i>
-                    <h5 className="mb-0 fw-semibold">Notifications</h5>
+                    <h5 className="mb-0 fw-semibold text-body">Notifications</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
@@ -457,10 +465,10 @@ export default function SystemSettings() {
 
               {/* Data retention */}
               <div className="col-12">
-                <div className="card border-0 shadow-sm modern-card">
-                  <div className="card-header bg-white border-0 d-flex align-items-center py-3">
+                <div className="card border-0 shadow-sm modern-card bg-body">
+                  <div className="card-header bg-body border-0 d-flex align-items-center py-3">
                     <i className="bi bi-archive me-2 text-info"></i>
-                    <h5 className="mb-0 fw-semibold">Data Retention</h5>
+                    <h5 className="mb-0 fw-semibold text-body">Data Retention</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
@@ -476,7 +484,9 @@ export default function SystemSettings() {
                           value={settings.data.retentionDaysFacts}
                           onChange={(e) => handle(["data", "retentionDaysFacts"], clampInt(e.target.value, 0, 3650))}
                         />
-                        <small className="text-muted">0 keeps indefinitely; build a cleanup job that respects this value.</small>
+                        <small className="text-muted">
+                          0 keeps indefinitely; build a cleanup job that respects this value.
+                        </small>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label fw-semibold">
@@ -498,10 +508,10 @@ export default function SystemSettings() {
 
               {/* Bulk user operations */}
               <div className="col-12">
-                <div className="card border-0 shadow-sm modern-card">
-                  <div className="card-header bg-white border-0 d-flex align-items-center py-3">
+                <div className="card border-0 shadow-sm modern-card bg-body">
+                  <div className="card-header bg-body border-0 d-flex align-items-center py-3">
                     <i className="bi bi-people-gear me-2 text-secondary"></i>
-                    <h5 className="mb-0 fw-semibold">Bulk User Operations</h5>
+                    <h5 className="mb-0 fw-semibold text-body">Bulk User Operations</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3 align-items-end">
@@ -513,7 +523,7 @@ export default function SystemSettings() {
                           onChange={(e) => setBulk({ ...bulk, target: e.target.value })}
                         >
                           <option value="all">All users</option>
-                          <option value="nonAdmins">Non‑admins</option>
+                          <option value="nonAdmins">Non-admins</option>
                           <option value="byRole">Users with role…</option>
                         </select>
                       </div>
@@ -577,7 +587,7 @@ export default function SystemSettings() {
                           )}
                         </button>
                         <small className="text-muted d-flex align-items-center">
-                          Changes update Firestore user records. Firebase Auth account properties like MFA enrollment cannot be mass‑edited here.
+                          Changes update Firestore user records. Firebase Auth account properties like MFA enrollment cannot be mass-edited here.
                         </small>
                       </div>
                     </div>
@@ -623,7 +633,7 @@ function clampInt(v, min, max) {
 
 function deepMerge(base, incoming) {
   if (Array.isArray(base)) return Array.isArray(incoming) ? incoming : base;
-  if (typeof base === "object" && base) {
+  if (typeof base === "object" && base && !Array.isArray(base)) {
     const out = { ...base };
     for (const k of Object.keys(incoming || {})) {
       out[k] = deepMerge(base[k], incoming[k]);
@@ -647,6 +657,43 @@ function setAtPath(obj, path, value) {
 
 function chunk(arr, size) {
   const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
   return out;
+}
+
+function sanitizeSettings(settings) {
+  // Basic sanitization - ensure required structure
+  const sanitized = {
+    org: {
+      companyName: String(settings.org?.companyName || ""),
+      supportEmail: String(settings.org?.supportEmail || ""),
+      timezone: String(settings.org?.timezone || "UTC"),
+      dashboardAccent: String(settings.org?.dashboardAccent || "primary"),
+    },
+    security: {
+      maintenanceMode: Boolean(settings.security?.maintenanceMode),
+      enforceMFA: Boolean(settings.security?.enforceMFA),
+      sessionTimeoutMins: clampInt(settings.security?.sessionTimeoutMins, 5, 480),
+      passwordPolicy: {
+        minLength: clampInt(settings.security?.passwordPolicy?.minLength, 6, 128),
+        requireNumbers: Boolean(settings.security?.passwordPolicy?.requireNumbers),
+        requireSymbols: Boolean(settings.security?.passwordPolicy?.requireSymbols),
+        requireUppercase: Boolean(settings.security?.passwordPolicy?.requireUppercase),
+      },
+      allowedDomains: String(settings.security?.allowedDomains || ""),
+      passwordRotationDays: clampInt(settings.security?.passwordRotationDays, 0, 3650),
+    },
+    notifications: {
+      defaultFactPriority: clampInt(settings.notifications?.defaultFactPriority, 1, 5),
+      broadcastThrottleSec: clampInt(settings.notifications?.broadcastThrottleSec, 0, 3600),
+    },
+    data: {
+      retentionDaysFacts: clampInt(settings.data?.retentionDaysFacts, 0, 3650),
+      retentionDaysPolicies: clampInt(settings.data?.retentionDaysPolicies, 0, 3650),
+    },
+  };
+  
+  return sanitized;
 }

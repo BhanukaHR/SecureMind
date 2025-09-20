@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import {
@@ -16,6 +16,14 @@ import {
 
 const db = getFirestore();
 
+// Default password policy (fallback if settings can't be loaded)
+const DEFAULT_PASSWORD_POLICY = {
+  minLength: 6,
+  requireNumbers: false,
+  requireSymbols: false,
+  requireUppercase: false,
+};
+
 export default function Register() {
   const nav = useNavigate();
   const [form, setForm] = useState({
@@ -29,16 +37,125 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
-  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const [passwordPolicy, setPasswordPolicy] = useState(DEFAULT_PASSWORD_POLICY);
+  const [passwordErrors, setPasswordErrors] = useState([]);
+  const [allowedDomains, setAllowedDomains] = useState("");
+
+  const set = (k, v) => {
+    setForm((p) => ({ ...p, [k]: v }));
+    // Clear password validation errors when password changes
+    if (k === "password") {
+      validatePassword(v, passwordPolicy);
+    }
+    // Clear email domain errors when email changes
+    if (k === "email") {
+      validateEmailDomain(v, allowedDomains);
+    }
+  };
+
+  // Load password policy and domain restrictions from settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settingsRef = doc(db, "app_settings", "system");
+        const settingsSnap = await getDoc(settingsRef);
+        if (settingsSnap.exists()) {
+          const settings = settingsSnap.data();
+          console.log("Loaded settings:", settings); // Debug log
+          if (settings.security?.passwordPolicy) {
+            console.log("Password policy from settings:", settings.security.passwordPolicy); // Debug log
+            setPasswordPolicy(settings.security.passwordPolicy);
+            // Validate current password against new policy
+            if (form.password) {
+              validatePassword(form.password, settings.security.passwordPolicy);
+            }
+          }
+          if (settings.security?.allowedDomains) {
+            setAllowedDomains(settings.security.allowedDomains);
+            // Validate current email against domain restrictions
+            if (form.email) {
+              validateEmailDomain(form.email, settings.security.allowedDomains);
+            }
+          }
+        } else {
+          console.log("No settings document found, using defaults"); // Debug log
+        }
+      } catch (error) {
+        console.error("Could not load password policy settings:", error);
+        // Continue with defaults
+      }
+    };
+
+    loadSettings();
+    
+    // Set up interval to periodically check for settings updates
+    const intervalId = setInterval(loadSettings, 10000); // Check every 10 seconds for faster testing
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Validate password against policy
+  const validatePassword = (password, policy) => {
+    const errors = [];
+    
+    if (password.length < policy.minLength) {
+      errors.push(`Password must be at least ${policy.minLength} characters long`);
+    }
+    
+    if (policy.requireNumbers && !/\d/.test(password)) {
+      errors.push("Password must contain at least one number (0-9)");
+    }
+    
+    if (policy.requireSymbols && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      errors.push("Password must contain at least one symbol (!@#$%^&*...)");
+    }
+    
+    if (policy.requireUppercase && !/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter (A-Z)");
+    }
+
+    setPasswordErrors(errors);
+    return errors.length === 0;
+  };
+
+  // Validate email domain
+  const validateEmailDomain = (email, allowedDomainsStr) => {
+    if (!allowedDomainsStr || !email) return true;
+    
+    const allowedDomains = allowedDomainsStr.split(',').map(d => d.trim().toLowerCase());
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    
+    if (emailDomain && !allowedDomains.includes(emailDomain)) {
+      setErr(`Email domain not allowed. Allowed domains: ${allowedDomains.join(', ')}`);
+      return false;
+    }
+    
+    // Clear domain-related errors if validation passes
+    if (err && err.includes("Email domain not allowed")) {
+      setErr("");
+    }
+    return true;
+  };
 
   const submit = async (e) => {
     e?.preventDefault();
     setErr("");
     setOk("");
     setBusy(true);
+    
     try {
       const employeeId = String(form.employeeId || "").trim();
       if (!employeeId) throw new Error("Employee ID is required.");
+
+      // Validate password against current policy
+      if (!validatePassword(form.password, passwordPolicy)) {
+        throw new Error("Password does not meet security requirements.");
+      }
+
+      // Validate email domain
+      if (!validateEmailDomain(form.email.trim(), allowedDomains)) {
+        throw new Error("Email domain is not allowed.");
+      }
 
       // 1) Create auth user
       const cred = await createUserWithEmailAndPassword(
@@ -91,11 +208,11 @@ export default function Register() {
         :root{
           --bg-1:#0b1020; --bg-2:#0e1326; --ink-1:#e5e7eb; --ink-2:#c7c9d1; --ink-dim:#9aa0ab;
           --primary:#7c8cff; --primary-2:#9a7cff; --surface:#0f152b; --surface-2:#141b34; --border:#24304f;
-          --success:#22c55e; --danger:#ef4444; --shadow:0 10px 30px rgba(0,0,0,.35);
+          --success:#22c55e; --danger:#ef4444; --warning:#f59e0b; --shadow:0 10px 30px rgba(0,0,0,.35);
         }
 
         .screen {
-          min-height: 100vh;                 /* scroll if needed */
+          min-height: 100vh;
           display: grid;
           grid-template-columns: 1.1fr 0.9fr;
           align-items: stretch;
@@ -152,20 +269,31 @@ export default function Register() {
         .muted{color:var(--ink-dim);font-size:.95rem;}
 
         .form-group{margin-bottom:1rem;}
+        .form-group.has-validation{margin-bottom:.5rem;}
         label{display:block;margin:0 0 .45rem;color:var(--ink-2);font-weight:600;}
         .input{width:100%;color:var(--ink-1);background:#0e142a;border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;transition:.2s ease;}
         .input:focus{outline:none;border-color:rgba(124,140,255,.65);box-shadow:0 0 0 4px rgba(124,140,255,.15);}
+        .input.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgba(239,68,68,.15);}
 
         .pw-wrap{position:relative;}
         .toggle{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--ink-dim);cursor:pointer;padding:.35rem .5rem;border-radius:8px;}
         .toggle:hover{color:var(--ink-1);background:rgba(255,255,255,.05);}
 
+        .password-requirements{margin-top:.5rem;padding:.75rem;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:8px;}
+        .requirement{display:flex;align-items:center;gap:.5rem;font-size:.85rem;margin-bottom:.3rem;}
+        .requirement:last-child{margin-bottom:0;}
+        .requirement.valid{color:var(--success);}
+        .requirement.invalid{color:var(--danger);}
+        .requirement.neutral{color:var(--ink-dim);}
+        .requirement-icon{width:14px;height:14px;display:flex;align-items:center;justify-content:center;}
+
         .alert{display:flex;gap:.7rem;align-items:flex-start;border-radius:12px;padding:.85rem .9rem;margin:.25rem 0 1rem;}
         .alert-danger{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.35);color:#fecaca;}
         .alert-success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35);color:#bbf7d0;}
+        .alert-warning{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.35);color:#fde68a;}
 
         .btn{width:100%;border:0;cursor:pointer;border-radius:12px;padding:.95rem 1rem;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:white;transition:.2s ease;display:flex;align-items:center;justify-content:center;gap:.6rem;}
-        .btn:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(124,140,255,.35);}
+        .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 28px rgba(124,140,255,.35);}
         .btn:disabled{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none;}
 
         .outline{display:inline-flex;gap:.6rem;align-items:center;justify-content:center;margin-top:.6rem;width:100%;border:1px solid var(--border);background:transparent;color:var(--ink-1);padding:.9rem 1rem;border-radius:12px;text-decoration:none;font-weight:700;}
@@ -187,7 +315,7 @@ export default function Register() {
       `}</style>
 
       <main className="screen">
-        {/* Left: Welcome/info (same as login) */}
+        {/* Left: Welcome/info */}
         <section className="welcome">
           <div className="glow" aria-hidden="true" />
           <div className="welcome-inner">
@@ -195,20 +323,18 @@ export default function Register() {
               <span className="logo-dot" />
               SecureMind
             </span>
-            <h1 className="title">Create your SecureMind account ✨</h1>
+            <h1 className="title">Create your SecureMind account</h1>
             <p className="subtitle">
-              Enter your Employee ID and work email. We’ll auto‑assign your role from the
+              Enter your Employee ID and work email. We'll auto-assign your role from the
               Employees directory so you get the right training from day one.
             </p>
 
             <div className="bullets">
-              <div className="bullet"><i>✓</i><div><strong>Role‑aware setup</strong><div className="muted">Your dashboard is tailored on first sign‑in.</div></div></div>
+              <div className="bullet"><i>✓</i><div><strong>Role-aware setup</strong><div className="muted">Your dashboard is tailored on first sign-in.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Email verification</strong><div className="muted">Secure your account and recover access easily.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Fast onboarding</strong><div className="muted">Quizzes, modules, and policies ready to go.</div></div></div>
               <div className="bullet"><i>✓</i><div><strong>Privacy by design</strong><div className="muted">Minimal data, encrypted in transit and at rest.</div></div></div>
             </div>
-
-           
           </div>
         </section>
 
@@ -221,7 +347,7 @@ export default function Register() {
             </div>
             <div className="head">
               <h2>Create account</h2>
-              <div className="muted">Enter your Employee ID to auto‑assign role</div>
+              <div className="muted">Enter your Employee ID to auto-assign role</div>
             </div>
 
             <form onSubmit={submit} noValidate>
@@ -232,11 +358,10 @@ export default function Register() {
                   className="input"
                   value={form.employeeId}
                   onChange={(e) => set("employeeId", e.target.value)}
-                  
                   required
                 />
                 <div className="muted" style={{ marginTop: 6 }}>
-                  We’ll fetch your role from the Employees database.
+                  We'll fetch your role from the Employees database.
                 </div>
               </div>
 
@@ -274,19 +399,24 @@ export default function Register() {
                   autoComplete="email"
                   placeholder="you@company.com"
                 />
+                {allowedDomains && (
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Allowed domains: {allowedDomains.split(',').map(d => d.trim()).join(', ')}
+                  </div>
+                )}
               </div>
 
-              <div className="form-group">
+              <div className="form-group has-validation">
                 <label htmlFor="password">Password</label>
                 <div className="pw-wrap">
                   <input
                     id="password"
                     type={show ? "text" : "password"}
-                    className="input"
+                    className={`input ${passwordErrors.length > 0 ? 'invalid' : ''}`}
                     value={form.password}
                     onChange={(e) => set("password", e.target.value)}
-                    placeholder="At least 8 characters"
-                    minLength={8}
+                    placeholder={`At least ${passwordPolicy.minLength} characters`}
+                    minLength={passwordPolicy.minLength}
                     required
                     autoComplete="new-password"
                   />
@@ -299,16 +429,57 @@ export default function Register() {
                     {show ? "Hide" : "Show"}
                   </button>
                 </div>
+                
+                {/* Password requirements */}
+                <div className="password-requirements">
+                  <div className="muted" style={{ marginBottom: '.5rem', fontWeight: 600 }}>
+                    Password Requirements:
+                  </div>
+                  
+                  <div className={`requirement ${form.password.length >= passwordPolicy.minLength ? 'valid' : form.password ? 'invalid' : 'neutral'}`}>
+                    <div className="requirement-icon">
+                      {form.password.length >= passwordPolicy.minLength ? '✓' : form.password ? '✗' : '•'}
+                    </div>
+                    <div>At least {passwordPolicy.minLength} characters</div>
+                  </div>
+                  
+                  {passwordPolicy.requireNumbers && (
+                    <div className={`requirement ${/\d/.test(form.password) ? 'valid' : form.password ? 'invalid' : 'neutral'}`}>
+                      <div className="requirement-icon">
+                        {/\d/.test(form.password) ? '✓' : form.password ? '✗' : '•'}
+                      </div>
+                      <div>At least one number (0-9)</div>
+                    </div>
+                  )}
+                  
+                  {passwordPolicy.requireSymbols && (
+                    <div className={`requirement ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password) ? 'valid' : form.password ? 'invalid' : 'neutral'}`}>
+                      <div className="requirement-icon">
+                        {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password) ? '✓' : form.password ? '✗' : '•'}
+                      </div>
+                      <div>At least one symbol (!@#$%^&*...)</div>
+                    </div>
+                  )}
+                  
+                  {passwordPolicy.requireUppercase && (
+                    <div className={`requirement ${/[A-Z]/.test(form.password) ? 'valid' : form.password ? 'invalid' : 'neutral'}`}>
+                      <div className="requirement-icon">
+                        {/[A-Z]/.test(form.password) ? '✓' : form.password ? '✗' : '•'}
+                      </div>
+                      <div>At least one uppercase letter (A-Z)</div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Messages (kept away from the top) */}
+              {/* Messages */}
               {err && (
                 <div className="alert alert-danger" role="alert">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M11 7h2v6h-2V7zm0 8h2v2h-2v-2z" />
                   </svg>
                   <div style={{ marginLeft: 6 }}>
-                    <strong>Couldn’t create account</strong>
+                    <strong>Couldn't create account</strong>
                     <div className="muted" style={{ marginTop: 4 }}>{err}</div>
                   </div>
                 </div>
@@ -322,7 +493,11 @@ export default function Register() {
                 </div>
               )}
 
-              <button className="btn" disabled={busy} type="submit">
+              <button 
+                className="btn" 
+                disabled={busy || passwordErrors.length > 0} 
+                type="submit"
+              >
                 {busy ? (
                   <>
                     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
