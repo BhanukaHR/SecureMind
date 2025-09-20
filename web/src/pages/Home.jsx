@@ -9,9 +9,12 @@ import {
   orderBy,
   limit,
   onSnapshot,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import useIdleLogout from "../hooks/useIdleLogout";
 
 
 export default function Home() {
@@ -20,15 +23,42 @@ export default function Home() {
 
   // Auth state management
   const [user, setUser] = useState(() => auth.currentUser);
+  const [userRole, setUserRole] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Apply idle logout only for authenticated users
+  const { resetTimer } = useIdleLogout(30);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      if (firebaseUser) {
+        try {
+          // Get user role from Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const role = userData.role?.toLowerCase() || 'user';
+            setUserRole(role);
+            console.log("User role loaded:", role); // Debug log
+          } else {
+            console.warn("User document not found, defaulting to 'user' role");
+            setUserRole('user');
+          }
+        } catch (error) {
+          console.error("Error loading user role:", error);
+          setUserRole('user'); // Default fallback
+        }
+      } else {
+        setUserRole(null);
+      }
+      
       setAuthLoading(false);
     });
+    
     return () => unsubscribe();
-  }, []);
+  }, [db]);
 
   // Policy state management
   const [policies, setPolicies] = useState([]);
@@ -139,6 +169,46 @@ export default function Home() {
       minute: '2-digit',
       hour12: true
     }).format(timestamp.toDate());
+  };
+
+  // Role-based dashboard navigation
+  const navigateToDashboard = () => {
+    if (!user || authLoading) {
+      nav("/login");
+      return;
+    }
+
+    console.log("Navigating to dashboard with role:", userRole); // Debug log
+    
+    // Reset idle timer when navigating to dashboard
+    if (resetTimer) resetTimer();
+    
+    // Navigate based on user role
+    switch (userRole) {
+      case "admin":
+        nav("/dashboard/admin");
+        break;
+      case "trainer":
+        nav("/dashboard/trainer");
+        break;
+      case "security":
+        nav("/dashboard/security");
+        break;
+      case "accounting":
+        nav("/dashboard/accounting");
+        break;
+      case "marketing":
+        nav("/dashboard/marketing");
+        break;
+      case "developer":
+        nav("/dashboard/developer");
+        break;
+      case "design":
+        nav("/dashboard/design");
+        break;
+      default:
+        nav("/dashboard/user");
+    }
   };
 
   return (
@@ -363,6 +433,17 @@ export default function Home() {
           opacity: 0.8;
         }
 
+        .user-role-badge {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 0.25rem 0.75rem;
+          border-radius: 12px;
+          text-transform: capitalize;
+          box-shadow: var(--shadow-sm);
+        }
+
         @media (max-width: 768px) {
           .hero-section {
             min-height: auto;
@@ -409,17 +490,25 @@ export default function Home() {
               <div className="loading-skeleton" style={{ width: '100px', height: '40px' }}></div>
             ) : user ? (
               <>
-                <span className="text-light small d-none d-md-inline">
-                  Welcome, <span className="fw-semibold text-white">
-                    {user.displayName || user.email?.split('@')[0] || 'User'}
+                <div className="text-light small d-none d-md-flex align-items-center gap-2">
+                  <span>
+                    Welcome, <span className="fw-semibold text-white">
+                      {user.displayName || user.email?.split('@')[0] || 'User'}
+                    </span>
                   </span>
-                </span>
+                  {userRole && (
+                    <span className="user-role-badge">
+                      {userRole}
+                    </span>
+                  )}
+                </div>
                 <button 
                   className="btn btn-outline-custom" 
-                  onClick={() => nav("/dashboard")}
+                  onClick={navigateToDashboard}
+                  disabled={authLoading}
                   aria-label="Go to Dashboard"
                 >
-                  Dashboard
+                  {authLoading ? 'Loading...' : 'Dashboard'}
                 </button>
               </>
             ) : (
@@ -456,7 +545,7 @@ export default function Home() {
                        borderRadius: '50px',
                        fontWeight: '600'
                      }}>
-                  🚀 Advanced Security Training Platform
+                  Advanced Security Training Platform
                 </div>
               </div>
               
@@ -473,14 +562,15 @@ export default function Home() {
               <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
                 <button
                   className="btn btn-primary-custom btn-lg"
-                  onClick={() => nav(user ? "/dashboard" : "/register")}
+                  onClick={() => user ? navigateToDashboard() : nav("/register")}
+                  disabled={authLoading}
                   style={{ minWidth: '200px' }}
                   aria-label={user ? "Access Dashboard" : "Get Started"}
                 >
-                  {user ? "Access Dashboard" : "Get Started"}
+                  {authLoading ? "Loading..." : user ? "Access Dashboard" : "Get Started"}
                 </button>
                 
-                {!user && (
+                {!user && !authLoading && (
                   <button
                     className="btn btn-outline-custom btn-lg"
                     onClick={() => nav("/login")}
