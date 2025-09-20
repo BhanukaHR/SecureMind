@@ -13,13 +13,7 @@ import {
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-/**
- * Enhanced Home.jsx — SecureMind landing page with professional design
- * - Clean, modern interface with improved accessibility
- * - Better loading states and error handling
- * - Responsive design optimized for all devices
- * - Live Policy Updates + Quiz Progress for authenticated users
- */
+
 export default function Home() {
   const nav = useNavigate();
   const db = getFirestore();
