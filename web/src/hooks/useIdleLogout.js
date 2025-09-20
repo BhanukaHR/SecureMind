@@ -8,7 +8,7 @@ export default function useIdleLogout(minutes = 30) {
   const warningTimer = useRef(null);
   const showWarning = useRef(false);
 
-  // Create a warning modal element
+  
   const createWarningModal = useCallback(() => {
     if (document.getElementById('idle-warning-modal')) return;
 
